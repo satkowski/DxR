@@ -24,7 +24,7 @@ namespace DxR
         public static string UNDEFINED = "undefined";                   // Value used for undefined objects in the JSON vis specs.
         public static float SIZE_UNIT_SCALE_FACTOR = 1.0f / 1000.0f;    // Conversion factor to convert each Unity unit to 1 meter.
         public static float DEFAULT_VIS_DIMS = 500.0f;                  // Default dimensions of a visualization, if not specified.
-                
+
         JSONNode visSpecs;                                              // Vis specs that is synced w/ the inferred vis specs and vis.
         JSONNode visSpecsInferred;                                      // This is the inferred vis specs and is ultimately used for construction.
 
@@ -40,7 +40,7 @@ namespace DxR
         string markType;                                                // Type or name of mark used in vis.
         public Data data;                                               // Object containing data.
         bool IsLinked = false;                                          // Link to other vis object for interaction.
-        string data_name=null;
+        string data_name = null;
 
         public List<GameObject> markInstances;                                 // List of mark instances; each mark instance corresponds to a datum.
 
@@ -61,8 +61,35 @@ namespace DxR
         public bool IsReady { get { return isReady; } }
 
         private int frameCount = 0;
-        public int FrameCount { get { return frameCount; } set { frameCount = value; } }
+        public int FrameCount { get { return frameCount; } set { frameCount = value; } } 
+        
+        /// <summary>
+        /// This method can create a GameObject based on the DxRVis prefab.
+        /// It will create the object dynamically, set the given parameter and reset the object.
+        /// This is necessary, due to the missing possiblity to add parameters to an GameObject.Instantiate call.
+        /// </summary>
+        /// <param name="visSpecsURL">The path to the json file that describes this visualization.</param>
+        /// <param name="enableGUI"></param>
+        /// <param name="enableSpecsExpansion"></param>
+        /// <param name="enableTooltip"></param>
+        /// <param name="verbose"></param>
+        /// <returns>An object of this class which is placed in a DxRVis GameObject.</returns>
+        public static Vis Create(string visSpecsURL, bool enableGUI = true, bool enableSpecsExpansion = false, bool enableTooltip = true, bool verbose = true)
+        {
+            // Creates the GameObject and get the object of this class.
+            GameObject newDxRVis = GameObject.Instantiate(Resources.Load("Prefabs/DxRVis") as GameObject);
+            Vis newVis = newDxRVis.GetComponent<Vis>();
 
+            // Sets alls the necessary parameters and reset the visualization.
+            newVis.visSpecsURL = visSpecsURL;
+            newVis.enableGUI = enableGUI;
+            newVis.enableSpecsExpansion = enableSpecsExpansion;
+            newVis.enableTooltip = enableTooltip;
+            newVis.verbose = verbose;
+            newVis.ResetVisSpecs();
+
+            return newVis;
+        }
 
         private void Awake()
         {
@@ -80,6 +107,15 @@ namespace DxR
 
             parser = new Parser();
 
+            ResetVisSpecs();
+        }
+
+        /// <summary>
+        /// Creates/Resets the whole visualization parameters like the GUI or the marks for the given visSpecsFile.
+        /// This needs to be called if the visSpecsURL has been changed.
+        /// </summary>
+        private void ResetVisSpecs()
+        {
             // Parse the vis specs URL into the vis specs object.
             parser.Parse(visSpecsURL, out visSpecs);
 
@@ -89,7 +125,7 @@ namespace DxR
             // Initialize the GUI based on the initial vis specs.
             InitGUI();
             InitTooltip();
-            
+
             // Update vis based on the vis specs.
             UpdateVis();
             isReady = true;
